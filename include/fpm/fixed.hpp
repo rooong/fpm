@@ -7,6 +7,7 @@
 #include <functional>
 #include <limits>
 #include <type_traits>
+#include <string>
 
 namespace fpm
 {
@@ -36,14 +37,14 @@ public:
     // Converts an integral number to the fixed-point type.
     // Like static_cast, this truncates bits that don't fit.
     template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-    constexpr inline explicit fixed(T val) noexcept
+    constexpr inline fixed(T val) noexcept
         : m_value(static_cast<BaseType>(val * FRACTION_MULT))
     {}
 
     // Converts an floating-point number to the fixed-point type.
     // Like static_cast, this truncates bits that don't fit.
     template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    constexpr inline explicit fixed(T val) noexcept
+    constexpr inline fixed(T val) noexcept
         : m_value(static_cast<BaseType>((val >= 0.0) ? (val * FRACTION_MULT + T{0.5}) : (val * FRACTION_MULT - T{0.5})))
     {}
 
@@ -73,6 +74,16 @@ public:
     constexpr inline BaseType raw_value() const noexcept
     {
         return m_value;
+    }
+
+    constexpr inline float toFloat() const noexcept
+    {
+        return static_cast<float>(m_value) / FRACTION_MULT;
+    }
+
+    constexpr inline int toInt() const noexcept
+    {
+        return static_cast<int>(m_value / FRACTION_MULT);
     }
 
     //! Constructs a fixed-point number from another fixed-point number.
@@ -127,6 +138,13 @@ public:
         return *this;
     }
 
+	template <typename I, typename std::enable_if<std::is_floating_point<I>::value>::type* = nullptr>
+	inline fixed& operator+=(I y) noexcept
+	{
+		m_value += fixed(y);
+		return *this;
+	}
+
     template <typename I, typename std::enable_if<std::is_integral<I>::value>::type* = nullptr>
     inline fixed& operator+=(I y) noexcept
     {
@@ -139,6 +157,13 @@ public:
         m_value -= y.m_value;
         return *this;
     }
+
+	template <typename I, typename std::enable_if<std::is_floating_point<I>::value>::type* = nullptr>
+	inline fixed& operator-=(I y) noexcept
+	{
+		m_value -= fixed(y);
+		return *this;
+	}
 
     template <typename I, typename std::enable_if<std::is_integral<I>::value>::type* = nullptr>
     inline fixed& operator-=(I y) noexcept
@@ -156,6 +181,13 @@ public:
         m_value = static_cast<BaseType>((value / 2) + (value % 2));
         return *this;
     }
+
+	template <typename I, typename std::enable_if<std::is_floating_point<I>::value>::type* = nullptr>
+	inline fixed& operator*=(I y) noexcept
+	{
+		m_value *= fixed(y);
+		return *this;
+	}
 
     template <typename I, typename std::enable_if<std::is_integral<I>::value>::type* = nullptr>
     inline fixed& operator*=(I y) noexcept
@@ -175,11 +207,25 @@ public:
         return *this;
     }
 
+	template <typename I, typename std::enable_if<std::is_floating_point<I>::value>::type* = nullptr>
+	inline fixed& operator/=(I y) noexcept
+	{
+		m_value /= fixed(y);
+		return *this;
+	}
+
     template <typename I, typename std::enable_if<std::is_integral<I>::value>::type* = nullptr>
     inline fixed& operator/=(I y) noexcept
     {
         m_value /= y;
         return *this;
+    }
+
+    std::string toString() noexcept
+    {
+        std::string str(std::to_string(m_value));
+        str += "(" + std::to_string(static_cast<float>(m_value) / FRACTION_MULT) +")";
+        return str;
     }
 
 private:
@@ -204,10 +250,22 @@ constexpr inline fixed<B, I, F> operator+(const fixed<B, I, F>& x, const fixed<B
     return fixed<B, I, F>(x) += y;
 }
 
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator+(const fixed<B, I, F>& x, T y) noexcept
+{
+	return fixed<B, I, F>(x) += fixed<B, I, F>(y);
+}
+
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
 constexpr inline fixed<B, I, F> operator+(const fixed<B, I, F>& x, T y) noexcept
 {
     return fixed<B, I, F>(x) += y;
+}
+
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator+(T x, const fixed<B, I, F>& y) noexcept
+{
+	return fixed<B, I, F>(y) += fixed<B, I, F>(x);
 }
 
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
@@ -226,10 +284,22 @@ constexpr inline fixed<B, I, F> operator-(const fixed<B, I, F>& x, const fixed<B
     return fixed<B, I, F>(x) -= y;
 }
 
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator-(const fixed<B, I, F>& x, T y) noexcept
+{
+	return fixed<B, I, F>(x) -= fixed<B, I, F>(y);
+}
+
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
 constexpr inline fixed<B, I, F> operator-(const fixed<B, I, F>& x, T y) noexcept
 {
     return fixed<B, I, F>(x) -= y;
+}
+
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator-(T x, const fixed<B, I, F>& y) noexcept
+{
+	return fixed<B, I, F>(x) -= fixed<B, I, F>(y);
 }
 
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
@@ -248,10 +318,22 @@ constexpr inline fixed<B, I, F> operator*(const fixed<B, I, F>& x, const fixed<B
     return fixed<B, I, F>(x) *= y;
 }
 
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator*(const fixed<B, I, F>& x, T y) noexcept
+{
+	return fixed<B, I, F>(x) *= fixed<B, I, F>(y);
+}
+
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
 constexpr inline fixed<B, I, F> operator*(const fixed<B, I, F>& x, T y) noexcept
 {
     return fixed<B, I, F>(x) *= y;
+}
+
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator*(T x, const fixed<B, I, F>& y) noexcept
+{
+	return fixed<B, I, F>(y) *= fixed<B, I, F>(x);
 }
 
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
@@ -270,10 +352,22 @@ constexpr inline fixed<B, I, F> operator/(const fixed<B, I, F>& x, const fixed<B
     return fixed<B, I, F>(x) /= y;
 }
 
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator/(const fixed<B, I, F>& x, T y) noexcept
+{
+	return fixed<B, I, F>(x) /= fixed<B, I, F>(y);
+}
+
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
 constexpr inline fixed<B, I, F> operator/(const fixed<B, I, F>& x, T y) noexcept
 {
     return fixed<B, I, F>(x) /= y;
+}
+
+template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+constexpr inline fixed<B, I, F> operator/(T x, const fixed<B, I, F>& y) noexcept
+{
+	return fixed<B, I, F>(x) /= fixed<B, I, F>(y);
 }
 
 template <typename B, typename I, unsigned int F, typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
