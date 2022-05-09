@@ -15,7 +15,7 @@ namespace fpm
 {
 
 template <typename CharT, typename B, typename I, unsigned int F>
-std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, fixed<B, I, F> x) noexcept
+std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, fixed<B, I, F> x)
 {
     const auto uppercase = ((os.flags() & std::ios_base::uppercase) != 0);
     const auto showpoint = ((os.flags() & std::ios_base::showpoint) != 0);
@@ -456,7 +456,6 @@ std::basic_ostream<CharT>& operator<<(std::basic_ostream<CharT>& os, fixed<B, I,
             break;
         }
     }
-
     // Width is reset after every write
     os.width(0);
 
